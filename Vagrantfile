@@ -1,37 +1,28 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+Vagrant.configure('2') do |config|
+  config.vm.box = 'rails-vagrant-box'  # 18.04
+  config.vm.hostname = 'rails-vagrant-box'
+  config.disksize.size = '20GB'
 
-# All Vagrant configuration is done below. The "2" in Vagrant.configure
-# configures the configuration version (we support older styles for
-# backwards compatibility). Please don't change it unless you know what
-# you're doing.
-Vagrant.configure("2") do |config|
-  # The most common configuration options are documented and commented below.
-  # For a complete reference, please see the online documentation at
-  # https://docs.vagrantup.com.
-
-  # Every Vagrant development environment requires a box. You can search for
-  # boxes at https://vagrantcloud.com/search.
-  config.vm.box = "ubuntu-16.04-rails-dev"
-
-  config.vm.box_check_update = false
-
-  config.ssh.username = "ubuntu"
-
-
-  config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
-  config.vm.network "forwarded_port", guest: 3000, host: 3000
+  config.ssh.insert_key = false
+  #config.ssh.forward_agent = true
+  config.vm.network :forwarded_port, guest: 3000, host: 3000
 
   config.vm.network "private_network", ip: "192.168.255.10"
 
-  config.vm.synced_folder '.', '/vagrant/jobs.ruby.tw', type: 'nfs'
-  config.vm.synced_folder 'd://workspace//skyway', '/vagrant/skyway', type: 'nfs'
-  # config.bindfs.bind_folder '/vagrant-nfs/skyway', '/var/www/skyway'
-
+  config.vm.synced_folder '.', '/vagrant' #, type: "rsync", rsync_auto: true 
 
   config.vm.provider 'virtualbox' do |v|
-    v.memory = 1024
-    v.cpus = 2
+    v.memory = ENV.fetch('RAILS_DEV_BOX_RAM', 4096).to_i
+    v.cpus   = ENV.fetch('RAILS_DEV_BOX_CPUS', 2).to_i
+
+    # v.customize [ "modifyvm", :id, "--uartmode1", "disconnected" ]
+
+    v.customize [ "modifyvm", :id, "--uart1", "0x3F8", "4" ]
+    v.customize [ "modifyvm", :id, "--uartmode1", "file", File.join(Dir.pwd, "ubuntu-bionic-18.04-cloudimg-console.log") ]
+
+    v.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/v-root", "1"]
   end
 
   config.vm.provision :shell, path: 'bootstrap.sh', keep_color: true
